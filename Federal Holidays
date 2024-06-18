@@ -1,0 +1,62 @@
+#Title: tidytuesday Federal Holidays
+#Author: Imogen Poyntz-Wright
+#Date: 17/06/24
+
+#1: Libraries
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+
+
+#2: Data load
+federal_holidays <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-06-18/federal_holidays.csv')
+proposed_federal_holidays <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2024/2024-06-18/proposed_federal_holidays.csv')
+
+#3: Explore data
+head(federal_holidays)
+head(proposed_federal_holidays)
+
+#4: Questions
+#How many federal holidays are there per month already
+#How mnay new proposed federal holidays are there per month
+
+
+#5: Extract month from data
+federal_holidays_copy <- sapply(strsplit(federal_holidays$date, " "), function(x) x[1]) #remove only month from data column
+federal_holidays$month <- federal_holidays_copy #add only month column to the df
+no_month<- table(federal_holidays$month) #count the number of times each month appears
+months<-  as.data.frame(no_month) #convert to df
+
+proposed_federal_holidays_copy <- sapply(strsplit(proposed_federal_holidays$date, " "), function(x) x[1]) #remove only month from data column
+proposed_federal_holidays$month <- proposed_federal_holidays_copy  #add only month column to the df
+no_month_proposed <- table(proposed_federal_holidays$month) #count the number of times each month appears
+months_proposed <- as.data.frame(no_month_proposed) #convert to df
+
+
+#6: Add column to identify proposed vs actual holidays
+months['Holiday_type'] = 'actual'
+months_proposed['Holiday_type'] = 'proposed'
+all <- rbind(months, months_proposed) #merge dfs by row
+
+#7: Plot data
+all$monthsabr <- substr(all$Var1, 1, 3) #shorten month names to fit on graph
+month_order <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec") #order months correctly
+all$monthsabr <- factor(all$monthsabr, levels = month_order) #Convert Var1 to a factor with the specified levels
+
+plot1 <- ggplot(all, aes(x = factor(monthsabr, levels = month_order), y = Freq, fill = Holiday_type)) +
+  geom_bar(stat = "identity", position = 'dodge') +
+  coord_polar(start = 0) +
+  theme_classic() +
+  labs(y = "Frequency", x = "", fill = "Holiday Type") +
+  theme(
+    axis.text.x = element_text( hjust = 1, size = 12, face = "bold"), axis.text.y = element_text(size = 12, face = "bold"),
+    axis.title.y = element_text(size = 14, face = "bold"), legend.title = element_text(size = 12, face = "bold"), legend.text = element_text(size = 10)) +
+  theme(panel.grid = element_blank(),         # Remove grid lines
+    axis.line = element_blank(),          # Remove axis lines
+    plot.title = element_text(size = 16, face = "bold"), # Title customization
+    plot.subtitle = element_text(size = 14),             # Subtitle customization
+    plot.caption = element_text(size = 10)               # Caption customization
+  ) +
+  labs(title = "Frequency of Holidays by Month",
+       subtitle = "Grouped by Holiday Type",
+       caption = "Source: tidytuesday 18/06/24")
